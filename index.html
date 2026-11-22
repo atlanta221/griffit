@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Griffit: личный журнал сериалов, фильмов, мультфильмов, аниме и игр с оценками, рецензиями, планами, тир-листами и рекомендациями."><title>Griffit: журнал сериалов, фильмов, аниме и игр</title>
+<meta name="description" content="Griffit: личный журнал сериалов, фильмов, мультфильмов, аниме и игр с оценками, рецензиями, планами, тир-листами и рекомендациями."><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='14' fill='%23E5337A'/%3E%3Cpath d='M19 14l15 10-15 10z' fill='white'/%3E%3C/svg%3E"><title>Griffit: журнал сериалов, фильмов, аниме и игр</title>
 <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;700&family=Unbounded:wght@600;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#EEF1F7;--card:#fff;--ink:#1B2240;--mu:#6B7391;--ln:#D8DDEB;--ac:#E5337A;--ac2:#17A398;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -75,10 +75,10 @@ img.cv{object-fit:cover;width:64px}.hb{background:none;border:0;padding:4px;colo
 .big{width:240px;max-width:100%;border-radius:12px;object-fit:cover;aspect-ratio:160/226}
 .ph{display:grid;place-items:center;color:#fff;font:800 64px Unbounded,sans-serif}
 .di{flex:1;min-width:220px}.di p{margin:0 0 12px}
-.bk{display:flex;gap:4px;flex-wrap:wrap}.fm [hidden]{display:none}</style></head><body><div class="w">
+.bk{display:flex;gap:4px;flex-wrap:wrap}.fm [hidden]{display:none}.ft{margin-top:40px;padding-top:16px;border-top:1px solid var(--ln);color:var(--mu);font-size:13px}.ft[hidden]{display:none}.ft a{color:inherit}</style></head><body><div class="w">
 <header class="br"><svg class="lg" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="14" fill="var(--ac)"/><path d="M19 14l15 10-15 10z" fill="#fff"/></svg><div><h1>Griffit</h1><p class="tg">Журнал сериалов, фильмов, мультфильмов, аниме и игр</p></div></header>
 <div class="top"><div class="nav" id="nav"></div><div class="bk"><button class="b3" data-a="bkx">Сохранить копию</button><button class="b3" data-a="bki">Загрузить копию</button></div></div>
-<main id="app"></main></div>
+<main id="app"></main><footer class="ft" id="ft" hidden>Данные и обложки фильмов, сериалов, мультфильмов и аниме предоставлены <a href="https://www.themoviedb.org/" target="_blank" rel="noopener">TMDB</a>. Этот продукт использует TMDB API, но не одобрен и не сертифицирован TMDB. Оценки критиков приблизительные.</footer></div>
 
 <div id="ts" role="status" hidden></div>
 <dialog id="dd"><div id="ddc"></div></dialog>
@@ -106,7 +106,7 @@ const item=id=>S.items.find(x=>x.id===id);
 const enc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o))));
 const dec=s=>JSON.parse(decodeURIComponent(escape(atob(s.trim()))));
 
-const cover=i=>COVERS[norm(i.t)]?`<img class="cv" alt="" src="${COVERS[norm(i.t)]}">`:`<div class="cv" style="background:${TC[i.type]}">${esc(i.t.trim().charAt(0).toUpperCase())}</div>`;
+const cover=i=>covSrc(i)?`<img class="cv" alt="" src="${esc(covSrc(i))}">`:`<div class="cv" style="background:${TC[i.type]}">${esc(i.t.trim().charAt(0).toUpperCase())}</div>`;
 const card=(i,x='')=>`<article class="it" data-det="${esc(i.type+'|'+i.t)}">${cover(i)}<div class="bd"><div class="tp"><span>${TY[i.type]}</span>${i.st==='done'?`<b class="rt">${i.r}/10</b>`:'<span>в планах</span>'}</div><h3>${esc(i.t)}</h3>${i.rev&&i.st==='done'?`<p>${esc(i.rev)}</p>`:''}<div class="ac">${x}</div></div></article>`;
 const chip=id=>{const i=item(id);return i?`<span class="ch${ui.sel===id?' sel':''}" draggable="true" data-id="${id}" style="--c:${TC[i.type]}">${esc(i.t)}</span>`:''};
 
@@ -157,6 +157,7 @@ function render(){
   const tab=(k,l)=>`<button class="${ui.view===k&&!ui.shared?'on':''}" data-a="nav" data-id="${k}">${l}</button>`;
   $('#nav').innerHTML=tab('log','Журнал')+tab('wish','Планы')+tab('tiers','Тир-листы');
   $('#app').innerHTML=ui.shared?sharedView():({log:logView,wish:logView,lists:listsView,tiers:tiersView})[ui.view]();
+  fillCovers();
 }
 
 /* form */
@@ -248,7 +249,7 @@ document.addEventListener('change',e=>{
   if(c==='addt'){S.tiers.find(x=>x.id===ui.open).rows.P.push(e.target.value)}
   save();render();
 });
-document.addEventListener('input',e=>{if(e.target.id==='q'){ui.q=e.target.value;$('#grid').innerHTML=gridHtml()}});
+document.addEventListener('input',e=>{if(e.target.id==='q'){ui.q=e.target.value;$('#grid').innerHTML=gridHtml();fillCovers()}});
 document.addEventListener('dragstart',e=>{const c=e.target.closest('.ch');if(c&&c.dataset.id)e.dataTransfer.setData('text/plain',c.dataset.id)});
 document.addEventListener('dragover',e=>{if(e.target.closest('.tz[data-k]'))e.preventDefault()});
 document.addEventListener('drop',e=>{const z=e.target.closest('.tz[data-k]');if(!z)return;e.preventDefault();move(e.dataTransfer.getData('text/plain'),z.dataset.k)});
@@ -287,10 +288,10 @@ const PL={series:'Сериалы',film:'Фильмы',game:'Игры',cartoon:'�
 const cnt=k=>S.items.filter(i=>i.type===k&&i.st===(ui.view==='wish'?'wish':'done')).length;
 function toast(m){const t=$('#ts');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2800)}
 function showDetail(key){
-  const j=key.indexOf('|'),k=key.slice(0,j),t=key.slice(j+1),it=S.items.find(x=>x.type===k&&x.t===t),v=(RATE[k]||{})[t],d=DESC[norm(t)],cv=COVERS[norm(t)];
+  const j=key.indexOf('|'),k=key.slice(0,j),t=key.slice(j+1),it=S.items.find(x=>x.type===k&&x.t===t),v=(RATE[k]||{})[t],tm=k==='game'?null:TM[norm(t)],d=DESC[norm(t)]||(tm&&tm.o)||'',cv=covSrc({t,type:k});
   const rate=v?(k==='game'?`Metacritic ${v[0]} · OpenCritic ${v[1]}`:k==='anime'?`IMDb ${v[0]} · MyAnimeList ${(v[1]/10).toFixed(1)}`:`IMDb ${v[0]} · Rotten Tomatoes ${v[1]}%`):'';
-  $('#ddc').innerHTML=`<div class="dc">${cv?`<img class="big" alt="Обложка: ${esc(t)}" src="${cv}">`:`<div class="big ph" style="background:${TC[k]}">${esc(t.trim().charAt(0).toUpperCase())}</div>`}<div class="di"><div class="tp"><span>${TY[k]}</span></div><h2>${esc(t)}</h2>${rate?`<p class="mu">Оценки критиков: ${rate}</p>`:''}${it&&it.st==='done'?`<p><b class="rt">Моя оценка: ${it.r}/10</b></p>${it.rev?`<p>${esc(it.rev)}</p>`:''}`:''}<p>${d?esc(d):'<span class="mu">Описание для этого названия пока не добавлено.</span>'}</p><div class="row"><button class="b2" id="ddx">Закрыть</button></div></div></div>`;
-  $('#ddx').onclick=()=>$('#dd').close();$('#dd').showModal();
+  $('#ddc').innerHTML=`<div class="dc">${cv?`<img class="big" alt="Обложка: ${esc(t)}" src="${cv}">`:`<div class="big ph" style="background:${TC[k]}">${esc(t.trim().charAt(0).toUpperCase())}</div>`}<div class="di"><div class="tp"><span>${TY[k]}</span></div><h2>${esc(t)}</h2>${rate?`<p class="mu">Оценки критиков: ${rate}</p>`:''}${tm&&tm.v?`<p class="mu">Оценка TMDB: ${tm.v.toFixed(1)}</p>`:''}${it&&it.st==='done'?`<p><b class="rt">Моя оценка: ${it.r}/10</b></p>${it.rev?`<p>${esc(it.rev)}</p>`:''}`:''}<p>${d?esc(d):'<span class="mu">Описание для этого названия пока не добавлено.</span>'}</p><div class="row"><button class="b2" id="ddx">Закрыть</button></div></div></div>`;
+  $('#ddx').onclick=()=>$('#dd').close();if(!$('#dd').open)$('#dd').showModal();if(API&&k!=='game'&&!(norm(t) in TM))tmGet(t).then(m=>{if(m&&$('#dd').open&&$('#ddc').textContent.includes(t))showDetail(key)});
 }
 async function exportData(){
   const data=JSON.stringify({app:'griffit',v:1,items:S.items,lists:S.lists,tiers:S.tiers}),fn='griffit-backup.json';
@@ -316,6 +317,32 @@ function showImportData(){
   }catch(e){$('#dlp').textContent='Не удалось прочитать копию. Проверьте, что текст скопирован полностью.'}};
   $('#dl').showModal();
 }
+const API='https://griffit-api.radogel.workers.dev'; /* адрес вашего Cloudflare Worker, например https://griffit-api.ВАШ-ЛОГИН.workers.dev */
+const TM=(()=>{try{return JSON.parse(localStorage.getItem('mt_tm')||'{}')}catch(e){return{}}})();
+const covSrc=i=>COVERS[norm(i.t)]||(i.type!=='game'&&TM[norm(i.t)]&&TM[norm(i.t)].p)||'';
+$('#ft').hidden=!API;
+async function tmGet(t){
+  if(!API)return null;const k=norm(t),c=TM[k];
+  if(c&&Date.now()-(c.ts||0)<30*864e5)return c;
+  try{
+    const r=await fetch(API+'/search?q='+encodeURIComponent(t.replace(/\s*\([^)]*\)\s*$/,'')));if(!r.ok)return null;const d=await r.json();
+    TM[k]=d.found?{p:d.poster,o:d.overview,v:d.vote,ts:Date.now()}:{ts:Date.now()};
+    try{localStorage.setItem('mt_tm',JSON.stringify(TM))}catch(e){}
+    return TM[k];
+  }catch(e){return null}
+}
+const TQ=[];let tr=0;
+function tmPump(){while(tr<4&&TQ.length){tr++;TQ.shift()().finally(()=>{tr--;tmPump()})}}
+function fillCovers(){
+  if(!API)return;
+  document.querySelectorAll('.it[data-det]').forEach(el=>{
+    const key=el.dataset.det,j=key.indexOf('|'),k=key.slice(0,j),t=key.slice(j+1),cv=el.querySelector('.cv');
+    if(k==='game'||!cv||cv.tagName==='IMG')return;
+    const c=TM[norm(t)];if(c&&Date.now()-(c.ts||0)<30*864e5)return;
+    TQ.push(()=>tmGet(t).then(m=>{if(m&&m.p&&cv.isConnected){const im=new Image();im.className='cv';im.alt='';im.src=m.p;cv.replaceWith(im)}}));
+  });
+  tmPump();
+}
 function pick(a,n){let s=Math.floor(Date.now()/864e5)+a.length;const r=()=>{s=(s+0x6D2B79F5)|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a.slice(0,n)}
 function recs(){
   const have=new Set(S.items.map(i=>i.t)),n=ui.type==='all'?6:14;
@@ -328,4 +355,5 @@ function recs(){
 function fromHash(){const m=location.hash.match(/^#s=(.+)$/);if(m){try{ui.shared=dec(m[1])}catch(e){}}}
 window.addEventListener('hashchange',()=>{fromHash();render()});
 fromHash();render();
+console.info('Griffit: сборка 2026-11-22-c, воркер:',API||'не подключён');
 </script></body></html>
